@@ -7,4 +7,4 @@
  - This is still very much in development, and any assistance on this project would be welcomed.
 ## Disclaimers
  - AI tools were used heavily in the making of this (Primarily Deepseek V4.1 Flash).  Code was vetted to the best of my ability.
- - Also I am new to Github so please have mercy on me
+ - Also I am new to Github so please have mercy on me.
