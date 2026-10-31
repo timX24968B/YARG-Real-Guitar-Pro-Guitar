@@ -67,10 +67,21 @@ namespace YARG.Input
                 // GameMode.ProGuitar => SetDefaultProGuitarBindings_Gamepad(gamepad),
                 // GameMode.ProKeys => SetDefaultProKeysBindings_Gamepad(gamepad),
 
+                GameMode.RealGuitar => SetDefaultRealGuitarBindings_Gamepad(gamepad),
+
                 GameMode.Vocals => SetDefaultVocalsBindings_Gamepad(gamepad),
 
                 _ => false
             };
+        }
+
+        private bool SetDefaultRealGuitarBindings_Gamepad(Gamepad gamepad)
+        {
+            if (Mode != GameMode.RealGuitar)
+                return false;
+
+            AddBinding(RealGuitarAction.StarPower, gamepad.selectButton);
+            return true;
         }
 
         private bool SetDefaultFiveFretBindings_Gamepad(Gamepad gamepad)

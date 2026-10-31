@@ -96,6 +96,7 @@ namespace YARG.Menu.ScoreScreen
 
                     break;
                 case GameMode.ProKeys:
+                case GameMode.RealGuitar:
                     // No Star Power Overlap
                     if (enginePreset.FiveFretGuitar.NoStarPowerOverlap)
                     {

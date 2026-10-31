@@ -5,6 +5,7 @@ using ManagedBass;
 using ManagedBass.Fx;
 using ManagedBass.Mix;
 using YARG.Audio.BASS.Effects;
+using YARG.Core.Audio;
 using YARG.Core.Logging;
 using YARG.Settings;
 
@@ -29,6 +30,9 @@ namespace YARG.Audio.BASS
             fCenter = 10_000f,
             fGain = -10f,
         };
+
+        // Bypass parameters are not used: Real Guitar removes the analysis EQ
+        // effects entirely so the detector reads the raw capture stream.
 
         private static readonly BQFParameters MonitorHighPass1Params = new()
         {
@@ -150,16 +154,23 @@ namespace YARG.Audio.BASS
         private readonly IBassReverbDsp   _reverb;
         private readonly int              _sourceChannels;
         private readonly int              _sourceHandle;
+        private readonly int              _analysisChannels;
         private readonly int[]?           _channelMap;
         private readonly Dictionary<int, RecordingEffects> _recordingEffects = new();
 
         private readonly object       _streamLock = new();
+        private readonly bool         _analysisEqAvailable;
         private          int          _analysisHandle;
+        private          int          _lowAnalysisEqHandle;
+        private          int          _highAnalysisEqHandle;
         private          BassMonitor? _monitor;
         private          int          _monitorHandle;
+        private          double       _monitoringLevel;
+        private          bool         _monitoringEnabled;
 
         private BassMicSignal(string name, int sampleRate, int sourceHandle, int sourceChannels, int[]? channelMap,
-            int monitorHandle, int analysisHandle, BassNoiseGateDsp noiseGate, IBassReverbDsp reverb)
+            int monitorHandle, int analysisHandle, int lowAnalysisEqHandle, int highAnalysisEqHandle,
+            BassNoiseGateDsp noiseGate, IBassReverbDsp reverb)
         {
             _name = name;
             SampleRate = sampleRate;
@@ -168,8 +179,61 @@ namespace YARG.Audio.BASS
             _channelMap = channelMap;
             _monitorHandle = monitorHandle;
             _analysisHandle = analysisHandle;
+            _lowAnalysisEqHandle = lowAnalysisEqHandle;
+            _highAnalysisEqHandle = highAnalysisEqHandle;
+            _analysisEqAvailable = lowAnalysisEqHandle != 0 || highAnalysisEqHandle != 0;
+
+            var analysisInfo = Bass.ChannelGetInfo(analysisHandle);
+            _analysisChannels = analysisInfo.Channels > 0 ? analysisInfo.Channels : 1;
             _noiseGate = noiseGate;
             _reverb = reverb;
+        }
+
+        /// <summary>
+        /// Enables or removes the two analysis-only EQ bands.  Real Guitar
+        /// removes them entirely so the detector sees the raw cable signal,
+        /// matching Rocksmith's pre-detector pipeline; vocal analysis keeps
+        /// the EQ.
+        /// </summary>
+        public bool SetAnalysisEqEnabled(bool enabled)
+        {
+            lock (_streamLock)
+            {
+                if (_analysisHandle == 0 || !_analysisEqAvailable)
+                {
+                    return false;
+                }
+
+                if (!enabled)
+                {
+                    bool removed = true;
+                    if (_lowAnalysisEqHandle != 0)
+                    {
+                        removed &= Bass.ChannelRemoveFX(_analysisHandle, _lowAnalysisEqHandle);
+                        _lowAnalysisEqHandle = 0;
+                    }
+
+                    if (_highAnalysisEqHandle != 0)
+                    {
+                        removed &= Bass.ChannelRemoveFX(_analysisHandle, _highAnalysisEqHandle);
+                        _highAnalysisEqHandle = 0;
+                    }
+
+                    return removed;
+                }
+
+                if (_lowAnalysisEqHandle == 0)
+                {
+                    _lowAnalysisEqHandle = BassHelpers.AddEqToChannel(_analysisHandle, LowAnalysisEq);
+                }
+
+                if (_highAnalysisEqHandle == 0)
+                {
+                    _highAnalysisEqHandle = BassHelpers.AddEqToChannel(_analysisHandle, HighAnalysisEq);
+                }
+
+                return _lowAnalysisEqHandle != 0 && _highAnalysisEqHandle != 0;
+            }
         }
 
         public int SampleRate { get; }
@@ -203,6 +267,8 @@ namespace YARG.Audio.BASS
             }
         }
 
+        public MicBufferInfo? GetBufferInfo() => null;
+
         public int GetBacklogBytes()
         {
             lock (_streamLock)
@@ -214,6 +280,29 @@ namespace YARG.Audio.BASS
 
                 int backlogBytes = BassMix.SplitStreamGetAvailable(_analysisHandle);
                 return backlogBytes < 0 ? -1 : backlogBytes / _sourceChannels;
+            }
+        }
+
+        public int GetBacklogFrames()
+        {
+            lock (_streamLock)
+            {
+                if (_analysisHandle == 0)
+                {
+                    return -1;
+                }
+
+                int backlogBytes = BassMix.SplitStreamGetAvailable(_analysisHandle);
+                if (backlogBytes < 0)
+                {
+                    return -1;
+                }
+
+                // The split stream is float.  Its output channel count can
+                // differ from the recording/source channel count, so use the
+                // cached analysis format rather than the recording channel's
+                // byte backlog.
+                return backlogBytes / (sizeof(float) * _analysisChannels);
             }
         }
 
@@ -361,12 +450,18 @@ namespace YARG.Audio.BASS
                     return null;
                 }
 
-                if (applyAnalysisEq && (BassHelpers.AddEqToChannel(analysisHandle, LowAnalysisEq) == 0 ||
-                    BassHelpers.AddEqToChannel(analysisHandle, HighAnalysisEq) == 0))
+                int lowAnalysisEqHandle = 0;
+                int highAnalysisEqHandle = 0;
+                if (applyAnalysisEq)
                 {
-                    YargLogger.LogFormatError("Failed to add EQ to mic '{0}' analysis split: {1}", name,
-                        Bass.LastError);
-                    return null;
+                    lowAnalysisEqHandle = BassHelpers.AddEqToChannel(analysisHandle, LowAnalysisEq);
+                    highAnalysisEqHandle = BassHelpers.AddEqToChannel(analysisHandle, HighAnalysisEq);
+                    if (lowAnalysisEqHandle == 0 || highAnalysisEqHandle == 0)
+                    {
+                        YargLogger.LogFormatError("Failed to add EQ to mic '{0}' analysis split: {1}", name,
+                            Bass.LastError);
+                        return null;
+                    }
                 }
 
                 if (!AddMonitoringEffects(monitorHandle))
@@ -398,14 +493,20 @@ namespace YARG.Audio.BASS
                 int sourceChannels = info.Channels > 0 ? info.Channels : 1;
                 var mapCopy = channelMap == null ? null : (int[]) channelMap.Clone();
                 var signal = new BassMicSignal(name, sampleRate, sourceHandle, sourceChannels, mapCopy,
-                    monitorHandle, analysisHandle, noiseGate, reverb);
+                    monitorHandle, analysisHandle, lowAnalysisEqHandle, highAnalysisEqHandle,
+                    noiseGate, reverb)
+                {
+                    _monitoringLevel = monitoringLevel,
+                };
                 monitorHandle = 0;
                 analysisHandle = 0;
                 noiseGate = null;
                 reverb = null;
 
                 var source = new BassMonitorSource(signal._monitorHandle, signal._reverb.RequestReset);
-                signal._monitor = router.RegisterMonitor(source, monitoringLevel, attached, detached);
+                // Start muted.  A gameplay input context enables monitoring
+                // when the song starts and disables it again on destruction.
+                signal._monitor = router.RegisterMonitor(source, 0, attached, detached);
                 if (signal._monitor != null)
                 {
                     return signal;
@@ -438,7 +539,20 @@ namespace YARG.Audio.BASS
             }
         }
 
-        public void SetMonitoringLevel(double volume) => _monitor?.SetVolume(volume);
+        public void SetMonitoringLevel(double volume)
+        {
+            _monitoringLevel = volume;
+            if (_monitoringEnabled)
+            {
+                _monitor?.SetVolume(volume);
+            }
+        }
+
+        public void SetMonitoringEnabled(bool enabled)
+        {
+            _monitoringEnabled = enabled;
+            _monitor?.SetVolume(enabled ? _monitoringLevel : 0);
+        }
 
         public void SetReverbLevel(float wet)
         {

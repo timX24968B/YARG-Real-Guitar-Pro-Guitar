@@ -19,7 +19,10 @@ namespace YARG.Audio.BASS
         bool TryCreateRecordingChannel(bool withEffects, out int handle, out int sampleRate);
         void ReleaseRecordingChannel(int handle);
         bool SetMonitoringLevel(float volume);
+        bool SetMonitoringEnabled(bool enabled);
         bool SetReverbLevel(float wet);
+        bool SetAnalysisEqEnabled(bool enabled);
+        bool SetLowLatencyInput(bool enabled);
         bool Reset();
         MicBufferInfo? GetBufferInfo();
     }

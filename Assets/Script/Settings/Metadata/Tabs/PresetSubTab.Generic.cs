@@ -167,6 +167,7 @@ namespace YARG.Settings.Metadata
         private static readonly Dictionary<string, FieldGroup[]> ColorFieldGroups = new()
         {
             [nameof(ColorProfile.FiveFretGuitar)] = BuildGuitarGroups(),
+            [nameof(ColorProfile.RealGuitar)] = BuildRealGuitarGroups(),
             [nameof(ColorProfile.FourLaneDrums)] = BuildDrumsGroups(cymbal: true),
             [nameof(ColorProfile.FiveLaneDrums)] = BuildDrumsGroups(cymbal: false),
         };
@@ -203,6 +204,31 @@ namespace YARG.Settings.Metadata
             {
                 new FieldSubGroup(null, openByDefault: true,
                     "Metal", "MetalStarPower", "Miss", "TapStripEmission"),
+            }));
+
+            return groups.ToArray();
+        }
+
+        private static FieldGroup[] BuildRealGuitarGroups()
+        {
+            var lanes = new[] { "LowE", "A", "D", "G", "B", "HighE" };
+            var groups = new List<FieldGroup>();
+
+            foreach (var lane in lanes)
+            {
+                groups.Add(new FieldGroup(lane, collapsedByDefault: true, new[]
+                {
+                    new FieldSubGroup(NotesSub, openByDefault: true,
+                        $"{lane}Note", $"{lane}NoteStarPower"),
+                    new FieldSubGroup(FretSub, openByDefault: false,
+                        $"{lane}Fret", $"{lane}FretInner", $"{lane}Particles"),
+                }));
+            }
+
+            groups.Add(new FieldGroup("General", collapsedByDefault: true, new[]
+            {
+                new FieldSubGroup(null, openByDefault: true,
+                    "Metal", "MetalStarPower", "Miss"),
             }));
 
             return groups.ToArray();
@@ -282,6 +308,7 @@ namespace YARG.Settings.Metadata
             (nameof(ColorProfile.FourLaneDrums),  "Four Lane Drums",  GameMode.FourLaneDrums),
             (nameof(ColorProfile.FiveLaneDrums),  "Five Lane Drums",  GameMode.FiveLaneDrums),
             (nameof(ColorProfile.ProKeys),        "Pro Keys",         GameMode.ProKeys),
+            (nameof(ColorProfile.RealGuitar),     "Real Guitar",      GameMode.RealGuitar),
         };
 
         private static readonly (string SubSection, string Label, GameMode Mode)[] EngineInstrumentModes =
@@ -342,6 +369,7 @@ namespace YARG.Settings.Metadata
                     GameMode.FourLaneDrums or GameMode.FiveLaneDrums => nameof(EnginePreset.Drums),
                     GameMode.Vocals => nameof(EnginePreset.Vocals),
                     GameMode.ProKeys => nameof(EnginePreset.ProKeys),
+                    GameMode.RealGuitar => nameof(EnginePreset.FiveFretGuitar),
                     _ => null,
                 };
             }

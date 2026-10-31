@@ -161,6 +161,88 @@ namespace YARG.Settings.Preview
         }
     }
 
+    public sealed class RealGuitarFakeNoteGenerator : IFakeNoteGenerator
+    {
+        public FakeNoteData CreateNote(double time, IFakeNoteRandom random)
+        {
+            return new FakeNoteData
+            {
+                Time = time,
+                Fret = random.Range(0, 6),
+                CenterNote = false,
+                NoteType = CreateNoteType(random)
+            };
+        }
+
+        public FakeNoteData CreateSpotlightNote(double time, FakeNoteSpotlight spotlight,
+            IFakeNoteRandom random)
+        {
+            int fret = spotlight.Fret;
+            if (spotlight.LeftyFlip)
+            {
+                fret = 5 - fret;
+            }
+
+            return new FakeNoteData
+            {
+                Time = time,
+                Fret = fret,
+                CenterNote = false,
+                NoteType = CreateNoteType(random)
+            };
+        }
+
+        public FakeNoteData CreateTypeSpotlightNote(double time, ThemeNoteType noteType,
+            IFakeNoteRandom random)
+        {
+            return new FakeNoteData
+            {
+                Time = time,
+                Fret = random.Range(0, 6),
+                CenterNote = false,
+                NoteType = noteType
+            };
+        }
+
+        public IEnumerable<FakeNoteData> CreateChordNotes(double time, FakeNoteData baseNote,
+            IFakeNoteRandom random)
+        {
+            if (baseNote.CenterNote)
+            {
+                yield break;
+            }
+
+            int placed = 0;
+            int denominator = 4;
+            for (int fret = 0; fret < 6 && placed < 2; fret++)
+            {
+                if (fret == baseNote.Fret || random.Range(0, denominator) != 0)
+                {
+                    continue;
+                }
+
+                placed++;
+                denominator *= 2;
+                yield return new FakeNoteData
+                {
+                    Time = time,
+                    Fret = fret,
+                    CenterNote = false,
+                    NoteType = baseNote.NoteType,
+                    ForceMiss = baseNote.ForceMiss,
+                    ForceStarPower = baseNote.ForceStarPower
+                };
+            }
+        }
+
+        private static ThemeNoteType CreateNoteType(IFakeNoteRandom random) => random.Range(0, 3) switch
+        {
+            0 => ThemeNoteType.Normal,
+            1 => ThemeNoteType.HOPO,
+            _ => ThemeNoteType.Tap
+        };
+    }
+
     public sealed class DrumFakeNoteGenerator : IFakeNoteGenerator
     {
         private readonly bool _fiveLane;

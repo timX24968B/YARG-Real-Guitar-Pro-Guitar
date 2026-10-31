@@ -493,6 +493,7 @@ namespace YARG.Gameplay
                         var prefab = player.Profile.GameMode switch
                         {
                             GameMode.FiveFretGuitar => _fiveFretGuitarPrefab,
+                            GameMode.RealGuitar     => _fiveFretGuitarPrefab,
                             GameMode.SixFretGuitar  => _sixFretGuitarPrefab,
                             GameMode.FourLaneDrums  => _fourLaneDrumsPrefab,
                             GameMode.FiveLaneDrums  => _fiveLaneDrumsPrefab,
@@ -507,6 +508,11 @@ namespace YARG.Gameplay
 
                         var playerObject = Instantiate(prefab,
                             new Vector3(highwayIndex * TRACK_SPACING_X, 100f, 0f), prefab.transform.rotation);
+
+                        if (player.Profile.GameMode == GameMode.RealGuitar)
+                        {
+                            RealGuitarPrefabConverter.ConvertPlayer(playerObject, player);
+                        }
 
                         // Setup player
                         var trackPlayer = playerObject.GetComponent<TrackPlayer>();

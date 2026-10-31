@@ -66,6 +66,8 @@ namespace YARG.Audio.BASS.Wasapi
 
         protected override int GetBacklogBytesCore() => _signal.GetBacklogBytes();
 
+        protected override int GetBacklogFramesCore() => _signal.GetBacklogFrames();
+
         protected override bool TryCreateRecordingChannelCore(bool withEffects, out int handle) =>
             _signal.TryCreateRecordingChannel(withEffects, out handle);
 
@@ -79,11 +81,23 @@ namespace YARG.Audio.BASS.Wasapi
             return true;
         }
 
+        protected override bool SetMonitoringEnabledCore(bool enabled)
+        {
+            _signal.SetMonitoringEnabled(enabled);
+            return true;
+        }
+
         protected override bool SetReverbLevelCore(float wet)
         {
             _signal.SetReverbLevel(wet);
             return true;
         }
+
+        protected override bool SetAnalysisEqEnabledCore(bool enabled) =>
+            _signal.SetAnalysisEqEnabled(enabled);
+
+        protected override bool SetLowLatencyInputCore(bool enabled) =>
+            _capture.TrySetLowLatency(enabled);
 
         public override bool Reset()
         {
@@ -101,7 +115,20 @@ namespace YARG.Audio.BASS.Wasapi
             }
         }
 
-        protected override MicBufferInfo? GetBufferInfoCore() => _capture.GetBufferInfo();
+        protected override MicBufferInfo? GetBufferInfoCore()
+        {
+            MicBufferInfo captureInfo = _capture.GetBufferInfo();
+            return new MicBufferInfo(
+                captureInfo.BufferFrames,
+                captureInfo.BufferMilliseconds,
+                captureInfo.SampleRate,
+                captureInfo.Channels,
+                captureInfo.IsAsio,
+                captureInfo.CushionMilliseconds,
+                captureInfo.WaitingBytes,
+                captureInfo.CapturePositionBytes,
+                _signal.GetBacklogFrames());
+        }
 
         protected override void DisposeCore()
         {

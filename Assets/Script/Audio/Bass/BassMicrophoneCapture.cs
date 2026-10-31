@@ -21,10 +21,13 @@ namespace YARG.Audio.BASS
             16000,
         };
 
+        private const int PreferredCapturePeriodMs = 5;
+
         private static readonly object SystemLock = new();
 
         private readonly int              _microphoneHandle;
         private readonly int              _deviceId;
+        private readonly int              _capturePeriodMs;
         private readonly HashSet<int>     _claimedChannels = new();
         private readonly object           _stateLock       = new();
         private readonly bool             _ownsDevice;
@@ -35,13 +38,14 @@ namespace YARG.Audio.BASS
         private bool          _recordingRequested;
 
         private BassMicrophoneCapture(int deviceId, int channels, int microphoneHandle,
-            bool ownsDevice, int sampleRate)
+            bool ownsDevice, int sampleRate, int capturePeriodMs)
         {
             _deviceId = deviceId;
             Channels = channels;
             _microphoneHandle = microphoneHandle;
             _ownsDevice = ownsDevice;
             SampleRate = sampleRate;
+            _capturePeriodMs = capturePeriodMs;
         }
 
         public int SampleRate { get; }
@@ -50,18 +54,20 @@ namespace YARG.Audio.BASS
 
         public MicBufferInfo GetBufferInfo()
         {
-            int devicePeriod = Math.Max(0, Bass.GetConfig(Configuration.DevicePeriod));
-            int bufferFrames = (int) Math.Round(SampleRate * (devicePeriod / 1000.0));
+            int bufferFrames = (int) Math.Round(SampleRate * (_capturePeriodMs / 1000.0));
             int waitingBytes = GetAvailableRecordBytes();
+            long capturePosition = Bass.ChannelGetPosition(_microphoneHandle,
+                PositionFlags.Bytes);
 
             return new MicBufferInfo(
                 bufferFrames: bufferFrames,
-                bufferMilliseconds: devicePeriod,
+                bufferMilliseconds: _capturePeriodMs,
                 sampleRate: SampleRate,
                 channels: Channels,
                 isAsio: false,
                 cushionMilliseconds: 0,
-                waitingBytes: waitingBytes);
+                waitingBytes: waitingBytes,
+                capturePositionBytes: capturePosition);
         }
 
         private bool ShouldRun => _recordingRequested && _listenerCount > 0 && !_disposed;
@@ -157,16 +163,33 @@ namespace YARG.Audio.BASS
         private static BassMicrophoneCapture? CreateCapture(int deviceId, int channels, int devicePeriod,
             bool ownsDevice)
         {
+            int fallbackPeriod = devicePeriod > 0 ? devicePeriod : 10;
+            int preferredPeriod = Math.Min(fallbackPeriod, PreferredCapturePeriodMs);
+
+            var capture = CreateCaptureAtPeriod(deviceId, channels, preferredPeriod, ownsDevice);
+            if (capture != null || preferredPeriod == fallbackPeriod)
+            {
+                return capture;
+            }
+
+            // Some drivers reject a 5 ms recording period.  Retry with the
+            // driver's normal period before giving up.
+            return CreateCaptureAtPeriod(deviceId, channels, fallbackPeriod, ownsDevice);
+        }
+
+        private static BassMicrophoneCapture? CreateCaptureAtPeriod(int deviceId, int channels,
+            int periodMs, bool ownsDevice)
+        {
             foreach (int sampleRate in PreferredSampleRates)
             {
-                var capture = CreateAtRate(deviceId, channels, sampleRate, devicePeriod, BassFlags.Float,
+                var capture = CreateAtRate(deviceId, channels, sampleRate, periodMs, BassFlags.Float,
                     ownsDevice);
                 if (capture != null)
                 {
                     return capture;
                 }
 
-                capture = CreateAtRate(deviceId, channels, sampleRate, devicePeriod, BassFlags.Default,
+                capture = CreateAtRate(deviceId, channels, sampleRate, periodMs, BassFlags.Default,
                     ownsDevice);
                 if (capture != null)
                 {
@@ -191,7 +214,8 @@ namespace YARG.Audio.BASS
                 return null;
             }
 
-            return new BassMicrophoneCapture(deviceId, channels, microphoneHandle, ownsDevice, sampleRate);
+            return new BassMicrophoneCapture(deviceId, channels, microphoneHandle, ownsDevice, sampleRate,
+                devicePeriod);
         }
 
         private int GetAvailableRecordBytes()

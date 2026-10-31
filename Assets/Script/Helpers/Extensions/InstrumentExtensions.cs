@@ -32,6 +32,7 @@ namespace YARG.Helpers.Extensions
                 Instrument.ProBass_17Fret     => SortAttribute.ProBass_17,
                 Instrument.ProBass_22Fret     => SortAttribute.ProBass_22,
                 Instrument.ProKeys            => SortAttribute.ProKeys,
+                Instrument.RealGuitar         => SortAttribute.RealGuitar,
                 Instrument.Vocals             => SortAttribute.Vocals,
                 Instrument.Harmony            => SortAttribute.Harmony,
                 Instrument.PartyVocals        => SortAttribute.FreeHarmony,
@@ -62,6 +63,7 @@ namespace YARG.Helpers.Extensions
                 SortAttribute.ProBass_17     => Instrument.ProBass_17Fret,
                 SortAttribute.ProBass_22     => Instrument.ProBass_22Fret,
                 SortAttribute.ProKeys        => Instrument.ProKeys,
+                SortAttribute.RealGuitar     => Instrument.RealGuitar,
                 SortAttribute.Vocals         => Instrument.Vocals,
                 SortAttribute.Harmony        => Instrument.Harmony,
                 SortAttribute.FreeHarmony    => Instrument.PartyVocals,
@@ -91,8 +93,11 @@ namespace YARG.Helpers.Extensions
                 Instrument.EliteDrums => "eliteDrums",
 
                 Instrument.ProGuitar_17Fret => "realGuitar",
+                Instrument.ProGuitar_22Fret => "realGuitar",
                 Instrument.ProBass_17Fret   => "realBass",
+                Instrument.ProBass_22Fret   => "realBass",
                 Instrument.ProKeys          => "realKeys",
+                Instrument.RealGuitar       => "realGuitar",
 
                 Instrument.Vocals  => "vocals",
                 Instrument.Harmony => "harmVocals",

@@ -529,8 +529,14 @@ namespace YARG.Gameplay.Player
 
             var themePrefab = ThemeManager.Instance.CreateNotePrefabFromTheme(
                 Player.ThemePreset, style, NotePool.Prefab);
-            NotePool.SetPrefabAndReset(themePrefab);
+            NotePool.SetPrefabAndReset(ProcessThemeNotePrefab(themePrefab));
         }
+
+        /// <summary>
+        /// Allows an instrument to replace the theme-generated note prefab
+        /// with one that uses its own note element type.
+        /// </summary>
+        protected virtual GameObject ProcessThemeNotePrefab(GameObject prefab) => prefab;
 
         protected abstract InstrumentDifficulty<TNote> GetNotes(SongChart chart);
         protected abstract TEngine CreateEngine();

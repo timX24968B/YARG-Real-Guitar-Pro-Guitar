@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using YARG.Core;
+using YARG.Core.Engine.RealGuitar;
 using YARG.Core.Extensions;
 using YARG.Core.Game;
 using YARG.Core.Input;
@@ -378,7 +379,9 @@ namespace YARG.Menu.DifficultySelect
 
             if (player.IsMissingMicrophone)
             {
-                ShowWarning(Localize.Key("Menu.DifficultySelect.WarningVocalistNoMicrophone"));
+                ShowWarning(Localize.Key(player.Profile.GameMode == GameMode.RealGuitar
+                    ? "Menu.DifficultySelect.WarningRealGuitarNoInput"
+                    : "Menu.DifficultySelect.WarningVocalistNoMicrophone"));
             }
             else if (player.IsMissingInputDevice)
             {
@@ -406,7 +409,8 @@ namespace YARG.Menu.DifficultySelect
                 });
 
                 var instrumentItem = CreateItem(LocalizeHeader("Instrument"),
-                    GetInstrumentDisplayName(player.Profile.CurrentInstrument, player.Profile.GameMode),
+                    GetInstrumentDisplayName(player.Profile.CurrentInstrument, player.Profile.GameMode,
+                        GlobalVariables.State.CurrentSong),
                     _lastMenuState == State.Instrument, _ringsItemPrefab, () =>
                 {
                     _menuState = State.Instrument;
@@ -593,7 +597,7 @@ namespace YARG.Menu.DifficultySelect
                 bool selected = CurrentPlayer.Profile.CurrentInstrument == instrument;
                 // Instrument name with its charted tier on a smaller, dimmed
                 // second line (mirroring the header text style).
-                string label = GetInstrumentDisplayName(instrument, CurrentPlayer.Profile.GameMode)
+                string label = GetInstrumentDisplayName(instrument, CurrentPlayer.Profile.GameMode, song)
                     + $"\n<size=18><color=#FFFFFF80>{GetTierLabel(GetTierValues(song, instrument))}</color></size>";
 
                 CreateItem(label, selected, () =>
@@ -849,7 +853,7 @@ namespace YARG.Menu.DifficultySelect
         }
 
         private static bool SupportsLeftyFlip(GameMode mode)
-            => mode is GameMode.FiveFretGuitar or GameMode.SixFretGuitar
+            => mode is GameMode.FiveFretGuitar or GameMode.SixFretGuitar or GameMode.RealGuitar
                 or GameMode.FourLaneDrums or GameMode.FiveLaneDrums or GameMode.EliteDrums;
 
         private static bool SupportsRangeShifts(GameMode mode)
@@ -1279,8 +1283,14 @@ namespace YARG.Menu.DifficultySelect
             return Localize.Key("Menu.DifficultySelect", key);
         }
 
-        private string GetInstrumentDisplayName(Instrument instrument, GameMode gameMode)
+        private string GetInstrumentDisplayName(Instrument instrument, GameMode gameMode,
+            SongEntry song = null)
         {
+            if (gameMode == GameMode.RealGuitar)
+            {
+                return $"Real Guitar ({FormatRealGuitarTuning(song)})";
+            }
+
             var name = instrument.ToLocalizedName();
             // When in 6-fret mode, indicate when a 5-fret instrument is being used
             // (i.e., a 5-fret chart loaded in 6-fret mode)
@@ -1294,6 +1304,17 @@ namespace YARG.Menu.DifficultySelect
                 return $"{name} (5-Lane)";
             }
             return name;
+        }
+
+        private static string FormatRealGuitarTuning(SongEntry song)
+        {
+            var tuning = song?.RealGuitarTuning;
+            if (tuning is not { Length: RealGuitarEngine.STRING_COUNT })
+            {
+                return "Standard assumed";
+            }
+
+            return RealGuitarEngine.GetTuningName(tuning) ?? "Custom";
         }
 
         private bool HasPlayableInstrument(SongEntry entry, in Instrument instrument)

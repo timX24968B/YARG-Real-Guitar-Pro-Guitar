@@ -54,8 +54,12 @@ namespace YARG.Player
         /// </summary>
         public BaseEngineParameters EngineParameterOverride { get; set; }
 
-        public bool IsMissingMicrophone => !IsReplay && Profile.GameMode == GameMode.Vocals && Bindings.Microphone == null && !Profile.IsBot;
-        public bool IsMissingInputDevice => !IsReplay && Profile.GameMode != GameMode.Vocals && !Bindings.HasDeviceAssigned && !Profile.IsBot;
+        public bool IsMissingMicrophone => !IsReplay &&
+            Profile.GameMode is GameMode.Vocals or GameMode.RealGuitar &&
+            Bindings.Microphone == null && !Profile.IsBot;
+        public bool IsMissingInputDevice => !IsReplay &&
+            Profile.GameMode is not (GameMode.Vocals or GameMode.RealGuitar) &&
+            !Bindings.HasDeviceAssigned && !Profile.IsBot;
 
         public YargPlayer(YargProfile profile, ProfileBindings bindings)
         {

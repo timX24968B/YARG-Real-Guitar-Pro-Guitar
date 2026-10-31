@@ -192,6 +192,7 @@ namespace YARG.Themes
         FiveLaneDrums,
 
         FiveLaneKeys,
-        ProKeys
+        ProKeys,
+        RealGuitar
     }
 }

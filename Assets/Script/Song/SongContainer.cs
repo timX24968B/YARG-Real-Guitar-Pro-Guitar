@@ -66,7 +66,8 @@ namespace YARG.Song
         Vocals,
         Harmony,
         Band,
-        FreeHarmony
+        FreeHarmony,
+        RealGuitar
     }
 
     public readonly struct SongCategory
@@ -335,6 +336,7 @@ namespace YARG.Song
                     SortAttribute.ProBass_17     => _sortInstruments[Instrument.ProBass_17Fret],
                     SortAttribute.ProBass_22     => _sortInstruments[Instrument.ProBass_22Fret],
                     SortAttribute.ProKeys        => _sortInstruments[Instrument.ProKeys],
+                    SortAttribute.RealGuitar     => _sortInstruments[Instrument.RealGuitar],
                     SortAttribute.Vocals         => _sortInstruments[Instrument.Vocals],
                     SortAttribute.Harmony        => _sortInstruments[Instrument.Harmony],
                     SortAttribute.Band           => _sortInstruments[Instrument.Band],

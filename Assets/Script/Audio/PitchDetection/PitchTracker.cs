@@ -38,6 +38,16 @@ namespace YARG.Audio.PitchDetection
         // Default is 50ms, or one record every 20ms
         private const int PITCH_RECORDS_PER_SECOND = 50;
 
+        // Rocksmith's pitch-note smoother keeps a short history and rejects a
+        // one-frame octave/harmonic jump while the recent history is stable.
+        // A genuinely new note is accepted after two consecutive frames at
+        // the new pitch, so fast playing is not delayed.
+        // FUN_0149f3d0 keeps a slightly longer pitch history and rejects
+        // samples outside mean +/- 1.5 standard deviations.
+        private const int PITCH_HISTORY_COUNT = 8;
+        private const float STABLE_HISTORY_SEMITONES = 1.0f;
+        private const float PITCH_OUTLIER_SIGMA = 1.5f;
+
         private readonly PitchProcessor _dsp;
 
         private readonly int _pitchBufSize;
@@ -49,6 +59,12 @@ namespace YARG.Audio.PitchDetection
         private long _sampleReadPosition;
 
         private readonly FilterInfo[] _filters;
+
+        private readonly float[] _pitchHistory = new float[PITCH_HISTORY_COUNT];
+        private readonly float[] _smoothScratch = new float[PITCH_HISTORY_COUNT];
+        private int _pitchHistoryCount;
+        private int _pitchHistoryIndex;
+        private float _lastPitch = float.NaN;
 
         public PitchTracker(float sampleRate, float detectLevelThreshold = 0.01f)
         {
@@ -91,6 +107,10 @@ namespace YARG.Audio.PitchDetection
         public void Reset()
         {
             _sampleReadPosition = 0;
+            _pitchHistoryCount = 0;
+            _pitchHistoryIndex = 0;
+            _lastPitch = float.NaN;
+            Array.Clear(_pitchHistory, 0, _pitchHistory.Length);
 
             foreach (var filter in _filters)
             {
@@ -178,7 +198,116 @@ namespace YARG.Audio.PitchDetection
                 samplesProcessed += frameCount;
             }
 
-            return detectedPitch;
+            return detectedPitch.HasValue ? SmoothPitch(detectedPitch.Value) : null;
+        }
+
+        private float SmoothPitch(float pitch)
+        {
+            if (pitch <= 0 || float.IsNaN(pitch) || float.IsInfinity(pitch))
+            {
+                return pitch;
+            }
+
+            float midi = 69f + 12f * Mathf.Log(pitch / 440f, 2f);
+
+            // FUN_0149f3d0: when more than five recent pitches are stable
+            // within one semitone, a sudden larger jump is a detector
+            // octave/harmonic error.  In the absence of the frame note list,
+            // hold the previous smoothed pitch.
+            if (_pitchHistoryCount > 5)
+            {
+                float minMidi = float.MaxValue;
+                float maxMidi = float.MinValue;
+                for (int i = 0; i < _pitchHistoryCount; i++)
+                {
+                    float sampleMidi = 69f + 12f * Mathf.Log(
+                        _pitchHistory[i] / 440f, 2f);
+                    minMidi = Mathf.Min(minMidi, sampleMidi);
+                    maxMidi = Mathf.Max(maxMidi, sampleMidi);
+                }
+
+                if (maxMidi - minMidi <= STABLE_HISTORY_SEMITONES &&
+                    !float.IsNaN(_lastPitch) &&
+                    Mathf.Abs(midi - _lastPitch) > STABLE_HISTORY_SEMITONES)
+                {
+                    pitch = MidiToHz(_lastPitch);
+                    midi = _lastPitch;
+                }
+            }
+
+            AddPitchToHistory(pitch);
+            if (_pitchHistoryCount < 2)
+            {
+                _lastPitch = midi;
+                return pitch;
+            }
+
+            float meanMidi = 0;
+            for (int i = 0; i < _pitchHistoryCount; i++)
+            {
+                meanMidi += 69f + 12f * Mathf.Log(_pitchHistory[i] / 440f, 2f);
+            }
+
+            meanMidi /= _pitchHistoryCount;
+            float variance = 0;
+            for (int i = 0; i < _pitchHistoryCount; i++)
+            {
+                float sampleMidi = 69f + 12f * Mathf.Log(
+                    _pitchHistory[i] / 440f, 2f);
+                float delta = sampleMidi - meanMidi;
+                variance += delta * delta;
+            }
+
+            variance /= _pitchHistoryCount;
+            float sigma = Mathf.Sqrt(variance) * PITCH_OUTLIER_SIGMA;
+            int scratchCount = 0;
+            for (int i = 0; i < _pitchHistoryCount; i++)
+            {
+                float sampleMidi = 69f + 12f * Mathf.Log(
+                    _pitchHistory[i] / 440f, 2f);
+                if (Mathf.Abs(sampleMidi - meanMidi) <= sigma)
+                {
+                    _smoothScratch[scratchCount++] = _pitchHistory[i];
+                }
+            }
+
+            if (scratchCount == 0)
+            {
+                _lastPitch = midi;
+                return pitch;
+            }
+
+            float sum = 0;
+            for (int i = 0; i < scratchCount; i++)
+            {
+                sum += _smoothScratch[i];
+            }
+
+            float smoothed = sum / scratchCount;
+            _lastPitch = 69f + 12f * Mathf.Log(smoothed / 440f, 2f);
+            return smoothed;
+        }
+
+        private static float MidiToHz(float midi)
+        {
+            return 440f * Mathf.Pow(2f, (midi - 69f) / 12f);
+        }
+
+        private void AddPitchToHistory(float pitch)
+        {
+            _pitchHistory[_pitchHistoryIndex] = pitch;
+            _pitchHistoryIndex = (_pitchHistoryIndex + 1) % PITCH_HISTORY_COUNT;
+            if (_pitchHistoryCount < PITCH_HISTORY_COUNT)
+            {
+                _pitchHistoryCount++;
+            }
+        }
+
+        private int PreviousHistoryIndex()
+        {
+            return _pitchHistoryIndex == 0
+                ? PITCH_HISTORY_COUNT - 1
+                : _pitchHistoryIndex - 1;
         }
 
         /// <summary>

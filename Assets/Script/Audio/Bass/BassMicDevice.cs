@@ -16,6 +16,8 @@ namespace YARG.Audio.BASS
         private          BassMicAnalyzer _analyzer;
         private readonly object          _lifecycleLock = new();
         private          bool                 _disposed;
+        private          bool                 _chordAnalysisEnabled;
+        private          int                  _rootLowMidi = 40;
 
         internal BassMicDevice(IBassMicSource source) : base(source.DisplayName)
         {
@@ -43,8 +45,59 @@ namespace YARG.Audio.BASS
 
         public void ReleaseRecordingChannel(int handle) => _source.ReleaseRecordingChannel(handle);
 
-        private BassMicAnalyzer CreateAnalyzer() =>
-            new(_source, () => IsRecordingOutput, () => InputManager.CurrentInputTime);
+        private BassMicAnalyzer CreateAnalyzer()
+        {
+            var analyzer = new BassMicAnalyzer(_source, () => IsRecordingOutput,
+                () => InputManager.CurrentInputTime, _chordAnalysisEnabled);
+            analyzer.SetRootLowMidi(_rootLowMidi);
+            return analyzer;
+        }
+
+        public override bool SupportsRealtimeOnsets =>
+            _chordAnalysisEnabled && _analyzer.IsReady;
+
+        public override void SetChordAnalysisEnabled(bool enabled)
+        {
+            lock (_lifecycleLock)
+            {
+                if (_disposed || _chordAnalysisEnabled == enabled)
+                {
+                    return;
+                }
+
+                _chordAnalysisEnabled = enabled;
+                _source.SetAnalysisEqEnabled(!enabled);
+                _analyzer.Dispose();
+                _analyzer = CreateAnalyzer();
+            }
+        }
+
+        public override void SetRootLowMidi(int rootLowMidi)
+        {
+            lock (_lifecycleLock)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _rootLowMidi = Math.Clamp(rootLowMidi, 0, 127);
+                _analyzer.SetRootLowMidi(_rootLowMidi);
+            }
+        }
+
+        public override void SetLowLatencyInput(bool enabled)
+        {
+            lock (_lifecycleLock)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _source.SetLowLatencyInput(enabled);
+            }
+        }
 
         private void RecreateAnalyzer()
         {
@@ -58,6 +111,7 @@ namespace YARG.Audio.BASS
                 _analyzer.Dispose();
                 try
                 {
+                    _source.SetAnalysisEqEnabled(!_chordAnalysisEnabled);
                     _analyzer = CreateAnalyzer();
                 }
                 catch (Exception exception)
@@ -95,6 +149,8 @@ namespace YARG.Audio.BASS
         }
 
         public override void SetMonitoringLevel(float volume) => _source.SetMonitoringLevel(volume);
+
+        public override void SetMonitoringEnabled(bool enabled) => _source.SetMonitoringEnabled(enabled);
 
         public override void SetReverbLevel(float wet) => _source.SetReverbLevel(wet);
 

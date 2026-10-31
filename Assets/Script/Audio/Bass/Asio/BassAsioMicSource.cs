@@ -17,6 +17,7 @@ namespace YARG.Audio.BASS.Asio
         private BassAsioInput _input;
         private float _monitoringLevel;
         private float _reverbLevel;
+        private bool _monitoringEnabled;
 
         public BassAsioMicSource(BassAsioMics owner, string driverId, BassAsioInput input, InputDeviceInfo info)
             : base(info.Name, info.DisplayName, info.Channel)
@@ -26,10 +27,7 @@ namespace YARG.Audio.BASS.Asio
             _input = input;
             _monitoringLevel = SettingsManager.Settings.VocalMonitoring.Value;
             _reverbLevel = SettingsManager.Settings.VocalReverb.Value;
-            if (!_input.EnableMonitoring(_monitoringLevel))
-            {
-                YargLogger.LogWarning($"Failed to enable monitoring for ASIO microphone '{DisplayName}'");
-            }
+            _input.EnableMonitoring(0);
             _input.SetReverbLevel(_reverbLevel);
         }
 
@@ -43,6 +41,8 @@ namespace YARG.Audio.BASS.Asio
 
         protected override int GetBacklogBytesCore() => _input.GetBacklogBytes();
 
+        protected override int GetBacklogFramesCore() => _input.GetBacklogFrames();
+
         protected override bool TryCreateRecordingChannelCore(bool withEffects, out int handle) =>
             _input.TryCreateRecordingChannel(withEffects, out handle);
 
@@ -53,7 +53,13 @@ namespace YARG.Audio.BASS.Asio
         protected override bool SetMonitoringLevelCore(float volume)
         {
             _monitoringLevel = volume;
-            return _input.EnableMonitoring(volume);
+            return _input.EnableMonitoring(_monitoringEnabled ? volume : 0);
+        }
+
+        protected override bool SetMonitoringEnabledCore(bool enabled)
+        {
+            _monitoringEnabled = enabled;
+            return _input.EnableMonitoring(enabled ? _monitoringLevel : 0);
         }
 
         protected override bool SetReverbLevelCore(float wet)
@@ -61,6 +67,9 @@ namespace YARG.Audio.BASS.Asio
             _reverbLevel = wet;
             return _input.SetReverbLevel(wet);
         }
+
+        protected override bool SetAnalysisEqEnabledCore(bool enabled) =>
+            _input.SetAnalysisEqEnabled(enabled);
 
         public override bool Reset()
         {
@@ -98,10 +107,7 @@ namespace YARG.Audio.BASS.Asio
 
                 _input.Release();
                 _input = input;
-                if (!_input.EnableMonitoring(_monitoringLevel))
-                {
-                    YargLogger.LogWarning($"Failed to restore monitoring for ASIO microphone '{DisplayName}'");
-                }
+                _input.EnableMonitoring(_monitoringEnabled ? _monitoringLevel : 0);
                 _input.SetReverbLevel(_reverbLevel);
             }
 

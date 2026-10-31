@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\YARG.Core\YARG.Core\YARG.Core.csproj" />
+    <Reference Include="ManagedBass">
+      <HintPath>..\..\Assets\Packages\ManagedBass.3.1.1\lib\net45\ManagedBass.dll</HintPath>
+    </Reference>
+    <Compile Include="..\..\Assets\Script\DeepScan\DeepScanAnalyzer.cs" Link="DeepScanAnalyzer.cs" />
+    <Compile Include="..\..\Assets\Script\Audio\PitchDetection\ChordAnalyzer.cs" Link="ChordAnalyzer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Assets\Plugins\BassNative\Windows\x86_64\bass.dll"
+          Link="bass.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\Assets\Plugins\BassNative\Windows\x86_64\bassopus.dll"
+          Link="bassopus.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

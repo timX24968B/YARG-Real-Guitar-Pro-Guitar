@@ -16,6 +16,7 @@ namespace YARG.Assets.Script.Helpers
             {
                 GameMode.FiveFretGuitar => VisualStyle.FiveFretGuitar,
                 GameMode.SixFretGuitar => VisualStyle.SixFretGuitar,
+                GameMode.RealGuitar => VisualStyle.RealGuitar,
                 GameMode.FourLaneDrums => VisualStyle.FourLaneDrums,
                 GameMode.FiveLaneDrums => VisualStyle.FiveLaneDrums,
                 GameMode.EliteDrums => instrument is Instrument.FiveLaneDrums ? VisualStyle.FiveLaneDrums : VisualStyle.FourLaneDrums,

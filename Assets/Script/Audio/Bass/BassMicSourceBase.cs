@@ -88,6 +88,19 @@ namespace YARG.Audio.BASS
             }
         }
 
+        public int GetBacklogFrames()
+        {
+            lock (_lock)
+            {
+                if (_disposed)
+                {
+                    return -1;
+                }
+
+                return GetBacklogFramesCore();
+            }
+        }
+
         public bool TryCreateRecordingChannel(bool withEffects, out int handle, out int sampleRate)
         {
             lock (_lock)
@@ -143,6 +156,19 @@ namespace YARG.Audio.BASS
             }
         }
 
+        public bool SetMonitoringEnabled(bool enabled)
+        {
+            lock (_lock)
+            {
+                if (_disposed)
+                {
+                    return false;
+                }
+
+                return SetMonitoringEnabledCore(enabled);
+            }
+        }
+
         public bool SetReverbLevel(float wet)
         {
             lock (_lock)
@@ -153,6 +179,32 @@ namespace YARG.Audio.BASS
                 }
 
                 return SetReverbLevelCore(wet);
+            }
+        }
+
+        public bool SetAnalysisEqEnabled(bool enabled)
+        {
+            lock (_lock)
+            {
+                if (_disposed)
+                {
+                    return false;
+                }
+
+                return SetAnalysisEqEnabledCore(enabled);
+            }
+        }
+
+        public bool SetLowLatencyInput(bool enabled)
+        {
+            lock (_lock)
+            {
+                if (_disposed)
+                {
+                    return false;
+                }
+
+                return SetLowLatencyInputCore(enabled);
             }
         }
 
@@ -211,11 +263,16 @@ namespace YARG.Audio.BASS
         protected abstract bool GetIsValidCore();
         protected abstract int ReadCore(Span<float> destination);
         protected abstract int GetBacklogBytesCore();
+        protected abstract int GetBacklogFramesCore();
         protected abstract bool TryCreateRecordingChannelCore(bool withEffects, out int handle);
         protected abstract void ReleaseRecordingChannelCore(int handle);
         protected abstract bool ResetToLiveCore();
         protected abstract bool SetMonitoringLevelCore(float volume);
+        protected abstract bool SetMonitoringEnabledCore(bool enabled);
         protected abstract bool SetReverbLevelCore(float wet);
+
+        protected abstract bool SetAnalysisEqEnabledCore(bool enabled);
+        protected virtual bool SetLowLatencyInputCore(bool enabled) => true;
         protected abstract MicBufferInfo? GetBufferInfoCore();
         protected abstract void DisposeCore();
     }

@@ -20,6 +20,7 @@ namespace YARG.Helpers.Extensions
                 GameMode.EliteDrums  => "eliteDrums",
 
                 GameMode.ProGuitar      => "realGuitar",
+                GameMode.RealGuitar     => "realGuitar",
                 GameMode.ProKeys        => "realKeys",
 
                 GameMode.Vocals         => "vocals",
@@ -87,6 +88,10 @@ namespace YARG.Helpers.Extensions
                     (ProfileSettingStrings.DRUM_STAR_POWER_ACTIVATION_TYPE, null),
                 },
                 GameMode.SixFretGuitar => new()
+                {
+                    (ProfileSettingStrings.LEFTY_FLIP, null),
+                },
+                GameMode.RealGuitar => new()
                 {
                     (ProfileSettingStrings.LEFTY_FLIP, null),
                 },

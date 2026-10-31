@@ -41,6 +41,8 @@ namespace YARG.Audio.BASS.Asio
 
         public int GetBacklogBytes() => _claimed ? _signal?.GetBacklogBytes() ?? -1 : -1;
 
+        public int GetBacklogFrames() => _claimed ? _signal?.GetBacklogFrames() ?? -1 : -1;
+
         internal bool TryCreateRecordingChannel(bool withEffects, out int handle)
         {
             if (!_claimed || _signal == null)
@@ -78,6 +80,9 @@ namespace YARG.Audio.BASS.Asio
 
             int bufferMs = SampleRate > 0 ? (int) Math.Round(BufferFrames * 1000.0 / SampleRate) : 0;
             int waitingBytes = _signal?.GetBacklogBytes() ?? 0;
+            int analysisWaitingFrames = _signal?.GetBacklogFrames() ?? -1;
+            long capturePosition = Bass.ChannelGetPosition(RootHandle,
+                PositionFlags.Bytes);
 
             return new MicBufferInfo(
                 bufferFrames: BufferFrames,
@@ -86,7 +91,9 @@ namespace YARG.Audio.BASS.Asio
                 channels: 1,
                 isAsio: true,
                 cushionMilliseconds: 0,
-                waitingBytes: Math.Max(0, waitingBytes));
+                waitingBytes: Math.Max(0, waitingBytes),
+                capturePositionBytes: capturePosition,
+                analysisWaitingFrames: analysisWaitingFrames);
         }
 
         internal void MarkActivated() => IsActivated = true;
@@ -141,6 +148,7 @@ namespace YARG.Audio.BASS.Asio
             }
 
             _signal.SetMonitoringLevel(volume);
+            _signal.SetMonitoringEnabled(volume > 0);
             return true;
         }
 
@@ -155,9 +163,19 @@ namespace YARG.Audio.BASS.Asio
             return true;
         }
 
+        internal bool SetAnalysisEqEnabled(bool enabled)
+        {
+            if (!_claimed || _signal == null)
+            {
+                return false;
+            }
+
+            return _signal.SetAnalysisEqEnabled(enabled);
+        }
+
         internal void Release()
         {
-            _signal?.SetMonitoringLevel(0);
+            _signal?.SetMonitoringEnabled(false);
             _claimed = false;
         }
 

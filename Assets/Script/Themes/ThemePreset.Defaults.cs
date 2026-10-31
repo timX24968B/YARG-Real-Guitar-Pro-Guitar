@@ -14,6 +14,7 @@ namespace YARG.Themes
             {
                 VisualStyle.FiveFretGuitar,
                 VisualStyle.SixFretGuitar,
+                VisualStyle.RealGuitar,
                 VisualStyle.FourLaneDrums,
                 VisualStyle.FiveLaneDrums,
                 VisualStyle.FiveLaneKeys,

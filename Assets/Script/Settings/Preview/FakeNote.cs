@@ -132,13 +132,15 @@ namespace YARG.Settings.Preview
             // note's own fret (and thus its lane position).
             FakeNoteData colorRef = NoteRef;
             if (FakeTrackPlayer.LeftyFlip
-                && FakeTrackPlayer.SelectedGameMode == GameMode.FiveFretGuitar
+                && FakeTrackPlayer.SelectedGameMode is GameMode.FiveFretGuitar or GameMode.RealGuitar
                 && !NoteRef.CenterNote)
             {
                 colorRef = new FakeNoteData
                 {
                     Time = NoteRef.Time,
-                    Fret = 6 - NoteRef.Fret,
+                    Fret = FakeTrackPlayer.SelectedGameMode == GameMode.RealGuitar
+                        ? 5 - NoteRef.Fret
+                        : 6 - NoteRef.Fret,
                     CenterNote = NoteRef.CenterNote,
                     NoteType = NoteRef.NoteType
                 };
@@ -172,6 +174,7 @@ namespace YARG.Settings.Preview
                 color = (FakeTrackPlayer.SelectedGameMode switch
                 {
                     GameMode.FiveFretGuitar => colorProfile.FiveFretGuitar.Miss,
+                    GameMode.RealGuitar => colorProfile.RealGuitar.Miss,
                     GameMode.FourLaneDrums  => colorProfile.FourLaneDrums.Miss,
                     GameMode.FiveLaneDrums  => colorProfile.FiveLaneDrums.Miss,
                     GameMode.ProKeys        => FakeTrackPlayer.UseFiveLaneKeys
@@ -254,6 +257,7 @@ namespace YARG.Settings.Preview
             var metalColor = (FakeTrackPlayer.SelectedGameMode switch
             {
                 GameMode.FiveFretGuitar => colorProfile.FiveFretGuitar.GetMetalColor(useStarPower),
+                GameMode.RealGuitar => colorProfile.RealGuitar.GetMetalColor(useStarPower),
                 GameMode.SixFretGuitar => colorProfile.SixFretGuitar.GetMetalColor(useStarPower),
                 GameMode.FourLaneDrums  => colorProfile.FourLaneDrums.GetMetalColor(useStarPower),
                 GameMode.FiveLaneDrums  => colorProfile.FiveLaneDrums.GetMetalColor(useStarPower),

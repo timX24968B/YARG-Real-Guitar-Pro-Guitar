@@ -24,6 +24,7 @@
             "FourLaneDrums": "Drumkit (4-Lane, Pro)",
             "FiveLaneDrums": "Drumkit (5-Lane)",
             "ProGuitar": "Pro Guitar (17-Fret, 22-Fret)",
+            "RealGuitar": "Real Guitar (Audio Input)",
             "ProKeys": "Keys (5-Lane, Pro)",
             "Menu": "Menu",
             "Vocals": "Vocals"
@@ -47,6 +48,7 @@
             "ProBass_17Fret": "Pro Bass (17-Fret)",
             "ProBass_22Fret": "Pro Bass (22-Fret)",
             "ProKeys": "Pro Keys",
+            "RealGuitar": "Real Guitar",
             "Vocals": "Vocals",
             "Harmony": "Harmony",
             "PartyVocals": "Free Harmonies",
@@ -105,6 +107,7 @@
             "ProBass_17": "Pro Bass (17-Fret)",
             "ProBass_22": "Pro Bass (22-Fret)",
             "ProKeys": "Pro Keys",
+            "RealGuitar": "Real Guitar",
             "Vocals": "Vocals",
             "Harmony": "Harmony",
             "FreeHarmony": "Free Harmony",
@@ -297,7 +300,8 @@
 			"Disconnect" : "Disconnect",
             "Done": "Done",
             "WarningPlayerNoInputDevice" : "This player has no input device assigned! Assign one from the Profiles menu.",
-            "WarningVocalistNoMicrophone" : "This vocalist has no microphone assigned! Assign one from the Profiles menu."
+            "WarningVocalistNoMicrophone" : "This vocalist has no microphone assigned! Assign one from the Profiles menu.",
+            "WarningRealGuitarNoInput" : "This Real Guitar player has no audio input assigned! Assign your Real Tone cable or interface from the Profiles menu."
         },
         "GameModes": {
             "Options": {

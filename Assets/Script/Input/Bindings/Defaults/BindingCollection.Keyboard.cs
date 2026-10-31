@@ -18,6 +18,7 @@ namespace YARG.Input
                 GameMode.EliteDrums => SetDefaultEliteDrumsBindings(keyboard),
 
                 GameMode.ProGuitar => SetDefaultProGuitarBindings(keyboard),
+                GameMode.RealGuitar => SetDefaultRealGuitarBindings(keyboard),
                 GameMode.ProKeys => SetDefaultProKeysBindings(keyboard),
 
                 GameMode.Vocals => SetDefaultVocalsBindings(keyboard),
@@ -139,6 +140,17 @@ namespace YARG.Input
                 return false;
 
             // Even on keyboard, this is nigh-impossible to bind lol
+            return true;
+        }
+
+        private bool SetDefaultRealGuitarBindings(Keyboard keyboard)
+        {
+            if (Mode != GameMode.RealGuitar)
+                return false;
+
+            // Notes come from the microphone; a keyboard key is only needed
+            // for Star Power.
+            AddBinding(RealGuitarAction.StarPower, keyboard.backspaceKey);
             return true;
         }
 

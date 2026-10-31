@@ -57,7 +57,8 @@ namespace YARG.Themes
             var parent = style switch
             {
                 VisualStyle.FiveFretGuitar or
-                VisualStyle.FiveLaneKeys   => _fiveFretNotes,
+                VisualStyle.FiveLaneKeys or
+                VisualStyle.RealGuitar => _fiveFretNotes,
                 VisualStyle.SixFretGuitar  => _sixFretNotes,
                 VisualStyle.FourLaneDrums  => _fourLaneNotes,
                 VisualStyle.FiveLaneDrums  => _fiveLaneNotes,
@@ -99,7 +100,8 @@ namespace YARG.Themes
             return style switch
             {
                 VisualStyle.FiveFretGuitar or
-                VisualStyle.FiveLaneKeys => _fiveFretFret,
+                VisualStyle.FiveLaneKeys or
+                VisualStyle.RealGuitar => _fiveFretFret,
                 VisualStyle.SixFretGuitar  => _sixFretFret,
                 VisualStyle.FourLaneDrums  => _fourLaneFret,
                 VisualStyle.FiveLaneDrums  => _fiveLaneFret,
@@ -129,6 +131,7 @@ namespace YARG.Themes
             {
                 supportedStyles.Add(VisualStyle.FiveFretGuitar);
                 supportedStyles.Add(VisualStyle.FiveLaneKeys);
+                supportedStyles.Add(VisualStyle.RealGuitar);
             }
             if (_sixFretNotes != null) supportedStyles.Add(VisualStyle.SixFretGuitar);
             if (_fourLaneNotes != null) supportedStyles.Add(VisualStyle.FourLaneDrums);

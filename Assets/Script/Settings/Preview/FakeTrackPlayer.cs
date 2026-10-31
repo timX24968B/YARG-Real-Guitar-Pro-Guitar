@@ -112,6 +112,28 @@ namespace YARG.Settings.Preview
                 }
             },
             {
+                GameMode.RealGuitar,
+                new Info
+                {
+                    HighwayOrdering = new Dictionary<int, int>
+                    {
+                        { 0, 0 }, { 1, 1 }, { 2, 2 }, { 3, 3 }, { 4, 4 }, { 5, 5 }
+                    },
+                    LaneCount = 6,
+
+                    FretColorProvider = (colorProfile) => colorProfile.RealGuitar,
+                    NoteColorProvider = (colorProfile, note) => colorProfile.RealGuitar
+                        .GetNoteColor(note.Fret)
+                        .ToUnityColor(),
+                    NoteStarPowerColorProvider = (colorProfile, note) => colorProfile.RealGuitar
+                        .GetNoteStarPowerColor(note.Fret)
+                        .ToUnityColor(),
+
+                    HitWindowProvider = (enginePreset) => enginePreset.FiveFretGuitar.HitWindow,
+                    Generator = new RealGuitarFakeNoteGenerator()
+                }
+            },
+            {
                 GameMode.FourLaneDrums,
                 new Info
                 {

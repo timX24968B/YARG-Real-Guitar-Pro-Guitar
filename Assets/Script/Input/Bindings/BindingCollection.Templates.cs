@@ -143,6 +143,13 @@ namespace YARG.Input
             new IndividualButtonBinding("Guitar.StarPower", (int) ProGuitarAction.StarPower),
         };
 
+        public static BindingCollection CreateRealGuitarBindings() => new(GameMode.RealGuitar)
+        {
+            // Pitch and note attacks come from the microphone/audio interface.
+            // A controller is only needed to deploy Star Power.
+            new IndividualButtonBinding("Guitar.StarPower", (int) RealGuitarAction.StarPower),
+        };
+
         public static BindingCollection CreateProKeysBindings() => new(GameMode.ProKeys)
         {
             new ButtonBinding("ProKeys.Key1",  (int) ProKeysAction.Key1),
@@ -209,6 +216,7 @@ namespace YARG.Input
                 GameMode.EliteDrums => CreateEliteDrumsBindings(),
 
                 GameMode.ProGuitar => CreateProGuitarBindings(),
+                GameMode.RealGuitar => CreateRealGuitarBindings(),
                 GameMode.ProKeys => CreateProKeysBindings(),
 
                 GameMode.Vocals => CreateVocalsBindings(),

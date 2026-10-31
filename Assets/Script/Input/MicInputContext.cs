@@ -27,6 +27,7 @@ namespace YARG.Input
             foreach (var device in _devices)
             {
                 device.ClearOutputQueue();
+                device.SetMonitoringEnabled(true);
                 device.IsRecordingOutput = true;
             }
         }
@@ -67,6 +68,7 @@ namespace YARG.Input
             foreach (var device in _devices)
             {
                 device.IsRecordingOutput = false;
+                device.SetMonitoringEnabled(false);
             }
         }
     }
