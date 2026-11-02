@@ -8,3 +8,4 @@
 ## Disclaimers
  - AI tools were used heavily in the making of this (Primarily Deepseek V4.1 Flash).  All of the code output, testing, etc. was vetted to the best of my ability.
  - Also I am new to Github so please have mercy on me.
+ - The only songs I was able to test on this were guitar pro songs in the .chart format.  I do not have any .rb3con pro guitar files to actually test with.
